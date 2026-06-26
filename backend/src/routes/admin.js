@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcrypt';
 import { all, get, run } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { validateEventPayload } from '../utils/events.js';
@@ -68,6 +69,57 @@ function validateAnnouncementPayload(payload) {
 
   return { announcement, errors };
 }
+
+
+function cleanRole(value) {
+  return clean(value) || 'admin';
+}
+
+router.get('/admin/users', async (_req, res) => {
+  const users = await all('SELECT id, username, role, created_at, updated_at FROM users ORDER BY username ASC');
+  res.json(users);
+});
+
+router.post('/admin/users', async (req, res) => {
+  const username = clean(req.body.username).toLowerCase();
+  const password = String(req.body.password || '');
+  const role = cleanRole(req.body.role);
+
+  if (!username) return res.status(400).json({ message: 'Informe o nome de usuário.' });
+  if (username.length < 3) return res.status(400).json({ message: 'O usuário deve ter pelo menos 3 caracteres.' });
+  if (!password || password.length < 6) return res.status(400).json({ message: 'A senha deve ter pelo menos 6 caracteres.' });
+
+  try {
+    const hash = await bcrypt.hash(password, 12);
+    const result = await run('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)', [username, hash, role]);
+    const created = await get('SELECT id, username, role, created_at, updated_at FROM users WHERE id = ?', [result.id]);
+    res.status(201).json(created);
+  } catch {
+    res.status(409).json({ message: 'Já existe um usuário com este nome.' });
+  }
+});
+
+router.put('/admin/users/:id/password', async (req, res) => {
+  const password = String(req.body.password || '');
+  if (!password || password.length < 6) return res.status(400).json({ message: 'A nova senha deve ter pelo menos 6 caracteres.' });
+
+  const hash = await bcrypt.hash(password, 12);
+  const result = await run('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [hash, req.params.id]);
+  if (!result.changes) return res.status(404).json({ message: 'Usuário não encontrado.' });
+  res.json({ message: 'Senha redefinida com sucesso.' });
+});
+
+router.delete('/admin/users/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (id === Number(req.user.id)) return res.status(400).json({ message: 'Você não pode excluir o usuário que está usando agora.' });
+
+  const total = await get('SELECT COUNT(*) AS total FROM users');
+  if ((total?.total || 0) <= 1) return res.status(400).json({ message: 'Não é possível excluir o último usuário.' });
+
+  const result = await run('DELETE FROM users WHERE id = ?', [id]);
+  if (!result.changes) return res.status(404).json({ message: 'Usuário não encontrado.' });
+  res.json({ message: 'Usuário excluído com sucesso.' });
+});
 
 router.get('/admin/events', async (req, res) => {
   const search = String(req.query.search || '').trim();

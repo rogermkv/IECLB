@@ -56,6 +56,9 @@ export default function Secretaria() {
   const [rsvpForm, setRsvpForm] = useState({ quantity: 1, names: [''] });
   const [notice, setNotice] = useState('');
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '' });
+  const [users, setUsers] = useState([]);
+  const [userForm, setUserForm] = useState({ username: '', password: '', role: 'admin' });
+  const [resetPasswords, setResetPasswords] = useState({});
 
   useEffect(() => {
     if (logged) loadAll();
@@ -71,7 +74,7 @@ export default function Secretaria() {
   }
 
   async function loadAll() {
-    await Promise.all([loadEvents(), loadAnnouncements(), loadPrayerRequests()]);
+    await Promise.all([loadEvents(), loadAnnouncements(), loadPrayerRequests(), loadUsers()]);
   }
 
   async function loadEvents() {
@@ -98,6 +101,11 @@ export default function Secretaria() {
 
   async function loadPrayerRequests() {
     try { setPrayerRequests(await api('/admin/prayer-requests')); }
+    catch (error) { show(error.message); }
+  }
+
+  async function loadUsers() {
+    try { setUsers(await api('/admin/users')); }
     catch (error) { show(error.message); }
   }
 
@@ -303,6 +311,40 @@ export default function Secretaria() {
     } catch (error) { show(error.message); }
   }
 
+  async function createUser(event) {
+    event.preventDefault();
+    try {
+      await api('/admin/users', { method: 'POST', body: JSON.stringify(userForm) });
+      setUserForm({ username: '', password: '', role: 'admin' });
+      await loadUsers();
+      show('Usuário criado com sucesso.');
+    } catch (error) { show(error.message); }
+  }
+
+  async function resetUserPassword(user) {
+    const password = resetPasswords[user.id] || '';
+    if (!password || password.length < 6) {
+      show('Informe uma senha com pelo menos 6 caracteres.');
+      return;
+    }
+
+    try {
+      const data = await api('/admin/users/' + user.id + '/password', { method: 'PUT', body: JSON.stringify({ password }) });
+      setResetPasswords((current) => ({ ...current, [user.id]: '' }));
+      await loadUsers();
+      show(data.message);
+    } catch (error) { show(error.message); }
+  }
+
+  async function deleteUser(user) {
+    if (!window.confirm('Excluir o usuário ' + user.username + '?')) return;
+    try {
+      const data = await api('/admin/users/' + user.id, { method: 'DELETE' });
+      await loadUsers();
+      show(data.message);
+    } catch (error) { show(error.message); }
+  }
+
   const categories = useMemo(() => [...new Set(events.map((event) => event.category).filter(Boolean))].sort(), [events]);
   const locations = useMemo(() => [...new Set(events.map((event) => event.location).filter(Boolean))].sort(), [events]);
   const today = new Date().toISOString().slice(0, 10);
@@ -464,7 +506,41 @@ export default function Secretaria() {
           )}
 
           {activeSection === 'settings' && (
-            <section className="admin-panel settings-panel"><div className="admin-section-heading"><h2>Configurações</h2><p>Altere a senha de acesso da Secretaria.</p></div><form className="admin-form settings-form" onSubmit={changePassword}><label><span>Senha atual</span><input type="password" value={passwords.currentPassword} onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })} required /></label><label><span>Nova senha</span><input type="password" minLength="6" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} required /></label><button className="button primary" type="submit"><Lock size={20} /> Alterar senha</button></form></section>
+            <div className="admin-section-stack">
+              <section className="admin-panel settings-panel">
+                <div className="admin-section-heading"><h2>Configurações</h2><p>Altere sua senha e gerencie usuários de acesso à Secretaria.</p></div>
+                <form className="admin-form settings-form" onSubmit={changePassword}>
+                  <h3>Alterar minha senha</h3>
+                  <label><span>Senha atual</span><input type="password" value={passwords.currentPassword} onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })} required /></label>
+                  <label><span>Nova senha</span><input type="password" minLength="6" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} required /></label>
+                  <button className="button primary" type="submit"><Lock size={20} /> Alterar senha</button>
+                </form>
+              </section>
+
+              <section className="admin-panel settings-panel user-management-panel">
+                <div className="admin-section-heading"><h2>Usuários</h2><p>Crie um acesso de segurança ou redefina a senha da Secretaria.</p></div>
+                <form className="admin-form user-create-form" onSubmit={createUser}>
+                  <h3>Novo usuário</h3>
+                  <div className="form-grid">
+                    <label><span>Usuário</span><input value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} placeholder="admin" required /></label>
+                    <label><span>Senha inicial</span><input type="password" minLength="6" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} required /></label>
+                  </div>
+                  <button className="button primary" type="submit"><Plus size={20} /> Criar usuário</button>
+                </form>
+                <div className="admin-event-list user-list">
+                  {users.map((user) => (
+                    <article className="admin-event-row user-row" key={user.id}>
+                      <div><strong>{user.username}</strong><span>Perfil: {user.role || 'admin'}</span><span>Criado em {user.created_at}</span></div>
+                      <div className="user-password-actions">
+                        <input type="password" minLength="6" placeholder="Nova senha" value={resetPasswords[user.id] || ''} onChange={(e) => setResetPasswords((current) => ({ ...current, [user.id]: e.target.value }))} />
+                        <div className="button-row small"><button className="button secondary" type="button" onClick={() => resetUserPassword(user)}>Redefinir senha</button><button className="icon-button danger" type="button" onClick={() => deleteUser(user)} aria-label="Excluir usuário"><Trash2 size={20} /></button></div>
+                      </div>
+                    </article>
+                  ))}
+                  {users.length === 0 && <p className="status-message">Nenhum usuário encontrado.</p>}
+                </div>
+              </section>
+            </div>
           )}
         </section>
       </div>

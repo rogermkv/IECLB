@@ -86,12 +86,17 @@ http://localhost:3333/api/events
 
 ## Login Inicial
 
+O sistema cria dois usuários iniciais:
+
 ```text
 Usuário: secretaria
 Senha: trocar123
+
+Usuário: admin
+Senha: trocar123
 ```
 
-Depois do primeiro acesso, altere a senha em **Secretaria > Configurações**.
+Depois do primeiro acesso, altere as senhas em **Secretaria > Configurações**. O usuário **admin** serve como acesso de segurança caso a senha da Secretaria seja esquecida.
 
 ## Variáveis de Ambiente
 
@@ -240,3 +245,21 @@ O arquivo `render.yaml` já foi criado. No Render, você também pode usar **Blu
 - O backend serve o build do frontend automaticamente quando `frontend/dist` existir.
 - As rotas da API continuam em `/api`.
 - O frontend em produção usa a mesma origem do site para chamar `/api`.
+
+
+## Gestão de Usuários
+
+Na área **Secretaria > Configurações**, um usuário autenticado pode:
+
+- criar novos usuários administrativos;
+- redefinir a senha de outro usuário;
+- excluir usuários que não estejam em uso no momento.
+
+Rotas administrativas:
+
+```text
+GET /api/admin/users
+POST /api/admin/users
+PUT /api/admin/users/:id/password
+DELETE /api/admin/users/:id
+```
