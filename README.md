@@ -91,9 +91,11 @@ O sistema cria dois usuários iniciais:
 ```text
 Usuário: secretaria
 Senha: trocar123
+Perfil: secretaria
 
 Usuário: admin
 Senha: trocar123
+Perfil: admin
 ```
 
 Depois do primeiro acesso, altere as senhas em **Secretaria > Configurações**. O usuário **admin** serve como acesso de segurança caso a senha da Secretaria seja esquecida.
@@ -263,3 +265,12 @@ POST /api/admin/users
 PUT /api/admin/users/:id/password
 DELETE /api/admin/users/:id
 ```
+
+## Perfis e Permissões
+
+Existem dois perfis administrativos:
+
+- **admin**: acessa todas as áreas, inclusive **Usuários**. Pode criar usuários, editar nome/perfil/status, redefinir senhas e excluir usuários.
+- **secretaria**: acessa Dashboard, Eventos, Avisos, Pedidos de Oração e Configurações. Pode alterar apenas a própria senha.
+
+A área **Usuários** aparece somente para perfil **admin**. As rotas de usuários também são protegidas no backend; se um usuário secretaria tentar acessar essas rotas, recebe erro `403`.

@@ -15,7 +15,7 @@ export default function Header() {
         </Link>
         <Link className="secretary-button" to="/secretaria">
           <LockKeyhole size={24} aria-hidden="true" />
-          Secretaria
+          Login
         </Link>
       </header>
 

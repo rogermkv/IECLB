@@ -63,12 +63,21 @@ export async function initDatabase() {
     'CREATE TABLE IF NOT EXISTS users (' +
       'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
       'username TEXT NOT NULL UNIQUE,' +
+      'display_name TEXT,' +
       'password_hash TEXT NOT NULL,' +
       "role TEXT NOT NULL DEFAULT 'admin'," +
       'created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
       'updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP' +
     ')'
   );
+
+
+
+  await run("ALTER TABLE users ADD COLUMN display_name TEXT").catch(() => {});
+  await run("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1").catch(() => {});
+  await run("UPDATE users SET role = 'admin', display_name = COALESCE(NULLIF(display_name, ''), 'Administrador'), is_active = 1 WHERE username = 'admin'").catch(() => {});
+  await run("UPDATE users SET role = 'secretaria', display_name = COALESCE(NULLIF(display_name, ''), 'Secretaria'), is_active = 1 WHERE username = 'secretaria'").catch(() => {});
+  await run("UPDATE users SET display_name = username WHERE display_name IS NULL OR display_name = ''").catch(() => {});
 
   await run(
     'CREATE TABLE IF NOT EXISTS rsvps (' +

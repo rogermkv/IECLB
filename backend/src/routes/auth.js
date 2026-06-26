@@ -13,12 +13,13 @@ router.post('/auth/login', async (req, res) => {
   if (!username || !password) return res.status(400).json({ message: 'Informe usuário e senha.' });
 
   const user = await get('SELECT * FROM users WHERE username = ?', [username]);
-  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+  if (!user || !user.is_active || !(await bcrypt.compare(password, user.password_hash))) {
     return res.status(401).json({ message: 'Usuário ou senha incorretos.' });
   }
 
-  const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, config.jwtSecret, { expiresIn: '8h' });
-  return res.json({ token, user: { username: user.username, role: user.role } });
+  const sessionUser = { id: user.id, username: user.username, display_name: user.display_name || user.username, role: user.role };
+  const token = jwt.sign(sessionUser, config.jwtSecret, { expiresIn: '8h' });
+  return res.json({ token, user: sessionUser });
 });
 
 router.post('/auth/change-password', requireAuth, async (req, res) => {
@@ -29,7 +30,7 @@ router.post('/auth/change-password', requireAuth, async (req, res) => {
   if (newPassword.length < 6) return res.status(400).json({ message: 'A nova senha deve ter pelo menos 6 caracteres.' });
 
   const user = await get('SELECT * FROM users WHERE id = ?', [req.user.id]);
-  if (!user || !(await bcrypt.compare(currentPassword, user.password_hash))) {
+  if (!user || !user.is_active || !(await bcrypt.compare(currentPassword, user.password_hash))) {
     return res.status(401).json({ message: 'A senha atual não confere.' });
   }
 

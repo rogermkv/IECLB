@@ -14,9 +14,28 @@ export function getToken() {
   return localStorage.getItem('agenda_ieclb_token');
 }
 
+export function getUser() {
+  try {
+    return JSON.parse(localStorage.getItem('agenda_ieclb_user') || 'null');
+  } catch {
+    return null;
+  }
+}
+
 export function setToken(token) {
   if (token) localStorage.setItem('agenda_ieclb_token', token);
   else localStorage.removeItem('agenda_ieclb_token');
+}
+
+export function setSession(token, user) {
+  setToken(token);
+  if (user) localStorage.setItem('agenda_ieclb_user', JSON.stringify(user));
+  else localStorage.removeItem('agenda_ieclb_user');
+}
+
+export function clearSession() {
+  setToken(null);
+  localStorage.removeItem('agenda_ieclb_user');
 }
 
 export async function api(path, options = {}) {

@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { all, get, run } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { validateEventPayload } from '../utils/events.js';
 
 const router = express.Router();
@@ -71,35 +71,85 @@ function validateAnnouncementPayload(payload) {
 }
 
 
-function cleanRole(value) {
-  return clean(value) || 'admin';
+const userRoles = ['admin', 'secretaria'];
+
+function normalizeUserPayload(payload, requirePassword = false) {
+  const user = {
+    username: clean(payload.username).toLowerCase(),
+    display_name: clean(payload.display_name),
+    role: userRoles.includes(payload.role) ? payload.role : 'secretaria',
+    is_active: payload.is_active === false || payload.is_active === 0 || payload.is_active === '0' ? 0 : 1,
+    password: String(payload.password || '')
+  };
+  if (!user.display_name) user.display_name = user.username;
+
+  const errors = [];
+  if (!user.username) errors.push('Informe o usuário.');
+  if (user.username && user.username.length < 3) errors.push('O usuário deve ter pelo menos 3 caracteres.');
+  if (requirePassword && user.password.length < 6) errors.push('A senha deve ter pelo menos 6 caracteres.');
+  return { user, errors };
 }
 
-router.get('/admin/users', async (_req, res) => {
-  const users = await all('SELECT id, username, role, created_at, updated_at FROM users ORDER BY username ASC');
+async function activeAdminCount(exceptUserId = null) {
+  const params = [];
+  let where = "WHERE role = 'admin' AND is_active = 1";
+  if (exceptUserId) {
+    where += ' AND id != ?';
+    params.push(exceptUserId);
+  }
+  const row = await get('SELECT COUNT(*) AS total FROM users ' + where, params);
+  return Number(row?.total || 0);
+}
+
+router.get('/admin/users', requireAdmin, async (_req, res) => {
+  const users = await all('SELECT id, username, display_name, role, is_active, created_at, updated_at FROM users ORDER BY username ASC');
   res.json(users);
 });
 
-router.post('/admin/users', async (req, res) => {
-  const username = clean(req.body.username).toLowerCase();
-  const password = String(req.body.password || '');
-  const role = cleanRole(req.body.role);
-
-  if (!username) return res.status(400).json({ message: 'Informe o nome de usuário.' });
-  if (username.length < 3) return res.status(400).json({ message: 'O usuário deve ter pelo menos 3 caracteres.' });
-  if (!password || password.length < 6) return res.status(400).json({ message: 'A senha deve ter pelo menos 6 caracteres.' });
+router.post('/admin/users', requireAdmin, async (req, res) => {
+  const { user, errors } = normalizeUserPayload(req.body, true);
+  if (errors.length) return res.status(400).json({ message: errors.join(' ') });
 
   try {
-    const hash = await bcrypt.hash(password, 12);
-    const result = await run('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)', [username, hash, role]);
-    const created = await get('SELECT id, username, role, created_at, updated_at FROM users WHERE id = ?', [result.id]);
+    const hash = await bcrypt.hash(user.password, 12);
+    const result = await run(
+      'INSERT INTO users (username, display_name, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
+      [user.username, user.display_name, hash, user.role, user.is_active]
+    );
+    const created = await get('SELECT id, username, display_name, role, is_active, created_at, updated_at FROM users WHERE id = ?', [result.id]);
     res.status(201).json(created);
   } catch {
-    res.status(409).json({ message: 'Já existe um usuário com este nome.' });
+    res.status(409).json({ message: 'Já existe um usuário com este login.' });
   }
 });
 
-router.put('/admin/users/:id/password', async (req, res) => {
+router.put('/admin/users/:id', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const current = await get('SELECT id, role, is_active FROM users WHERE id = ?', [id]);
+  if (!current) return res.status(404).json({ message: 'Usuário não encontrado.' });
+
+  const { user, errors } = normalizeUserPayload(req.body, false);
+  if (errors.length) return res.status(400).json({ message: errors.join(' ') });
+
+  const wouldRemoveActiveAdmin = current.role === 'admin' && current.is_active && (user.role !== 'admin' || !user.is_active);
+  if (wouldRemoveActiveAdmin && (await activeAdminCount(id)) < 1) {
+    return res.status(400).json({ message: 'Não é possível deixar o sistema sem um administrador ativo.' });
+  }
+
+  try {
+    const result = await run(
+      'UPDATE users SET username = ?, display_name = ?, role = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [user.username, user.display_name, user.role, user.is_active, id]
+    );
+    if (!result.changes) return res.status(404).json({ message: 'Usuário não encontrado.' });
+    const updated = await get('SELECT id, username, display_name, role, is_active, created_at, updated_at FROM users WHERE id = ?', [id]);
+    res.json(updated);
+  } catch {
+    res.status(409).json({ message: 'Já existe um usuário com este login.' });
+  }
+});
+
+router.put('/admin/users/:id/password', requireAdmin, async (req, res) => {
   const password = String(req.body.password || '');
   if (!password || password.length < 6) return res.status(400).json({ message: 'A nova senha deve ter pelo menos 6 caracteres.' });
 
@@ -109,12 +159,15 @@ router.put('/admin/users/:id/password', async (req, res) => {
   res.json({ message: 'Senha redefinida com sucesso.' });
 });
 
-router.delete('/admin/users/:id', async (req, res) => {
+router.delete('/admin/users/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   if (id === Number(req.user.id)) return res.status(400).json({ message: 'Você não pode excluir o usuário que está usando agora.' });
 
-  const total = await get('SELECT COUNT(*) AS total FROM users');
-  if ((total?.total || 0) <= 1) return res.status(400).json({ message: 'Não é possível excluir o último usuário.' });
+  const user = await get('SELECT id, role, is_active FROM users WHERE id = ?', [id]);
+  if (!user) return res.status(404).json({ message: 'Usuário não encontrado.' });
+  if (user.role === 'admin' && user.is_active && (await activeAdminCount(id)) < 1) {
+    return res.status(400).json({ message: 'Não é possível excluir o único administrador ativo.' });
+  }
 
   const result = await run('DELETE FROM users WHERE id = ?', [id]);
   if (!result.changes) return res.status(404).json({ message: 'Usuário não encontrado.' });

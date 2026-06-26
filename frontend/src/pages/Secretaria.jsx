@@ -1,6 +1,6 @@
 import { Bell, CalendarDays, CheckCircle2, Edit3, HeartHandshake, Lock, LogOut, Plus, Save, Search, Settings, Trash2, UsersRound, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { API_URL, api, eventTime, formatDate, getToken, setToken } from '../services/api.js';
+import { API_URL, api, clearSession, eventTime, formatDate, getToken, getUser, setSession } from '../services/api.js';
 
 const emptyEvent = { date: '', start_time: '', end_time: '', title: '', category: '', location: '', audience: '', description: '', notes: '', allow_rsvp: true, show_rsvp_names_public: true };
 const emptyAnnouncement = { title: '', message: '', type: 'Normal', start_date: '', end_date: '', is_active: true };
@@ -11,6 +11,7 @@ const adminSections = [
   { id: 'events', label: 'Eventos', icon: CalendarDays },
   { id: 'announcements', label: 'Avisos', icon: Bell },
   { id: 'prayers', label: 'Pedidos de Oração', icon: HeartHandshake },
+  { id: 'users', label: 'Usuários', icon: UsersRound, adminOnly: true },
   { id: 'settings', label: 'Configurações', icon: Settings }
 ];
 
@@ -31,6 +32,7 @@ function statusText(status) {
 
 export default function Secretaria() {
   const [logged, setLogged] = useState(Boolean(getToken()));
+  const [currentUser, setCurrentUser] = useState(getUser());
   const [activeSection, setActiveSection] = useState('dashboard');
   const [login, setLogin] = useState({ username: 'secretaria', password: '' });
   const [events, setEvents] = useState([]);
@@ -57,12 +59,17 @@ export default function Secretaria() {
   const [notice, setNotice] = useState('');
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '' });
   const [users, setUsers] = useState([]);
-  const [userForm, setUserForm] = useState({ username: '', password: '', role: 'admin' });
-  const [resetPasswords, setResetPasswords] = useState({});
+  const [userForm, setUserForm] = useState({ id: null, username: '', display_name: '', password: '', role: 'secretaria', is_active: true });
+  const [showUserForm, setShowUserForm] = useState(false);
 
   useEffect(() => {
+    if (logged && !currentUser) {
+      clearSession();
+      setLogged(false);
+      return;
+    }
     if (logged) loadAll();
-  }, [logged]);
+  }, [logged, currentUser]);
 
   useEffect(() => {
     if (logged && activeSection === 'prayers') loadPrayerRequests();
@@ -73,8 +80,17 @@ export default function Secretaria() {
     window.setTimeout(() => setNotice(''), 5000);
   }
 
+  const isAdmin = currentUser?.role === 'admin';
+  const visibleAdminSections = adminSections.filter((section) => !section.adminOnly || isAdmin);
+
+  useEffect(() => {
+    if (activeSection === 'users' && !isAdmin) setActiveSection('dashboard');
+  }, [activeSection, isAdmin]);
+
   async function loadAll() {
-    await Promise.all([loadEvents(), loadAnnouncements(), loadPrayerRequests(), loadUsers()]);
+    const tasks = [loadEvents(), loadAnnouncements(), loadPrayerRequests()];
+    if (currentUser?.role === 'admin') tasks.push(loadUsers());
+    await Promise.all(tasks);
   }
 
   async function loadEvents() {
@@ -113,7 +129,8 @@ export default function Secretaria() {
     event.preventDefault();
     try {
       const data = await api('/auth/login', { method: 'POST', body: JSON.stringify(login) });
-      setToken(data.token);
+      setSession(data.token, data.user);
+      setCurrentUser(data.user);
       setLogged(true);
       show('Login realizado com sucesso.');
     } catch (error) { show(error.message); }
@@ -311,18 +328,33 @@ export default function Secretaria() {
     } catch (error) { show(error.message); }
   }
 
-  async function createUser(event) {
+  function newUser() {
+    setUserForm({ id: null, username: '', display_name: '', password: '', role: 'secretaria', is_active: true });
+    setShowUserForm(true);
+  }
+
+  function editUser(user) {
+    setUserForm({ id: user.id, username: user.username || '', display_name: user.display_name || '', password: '', role: user.role || 'secretaria', is_active: Boolean(user.is_active) });
+    setShowUserForm(true);
+  }
+
+  async function saveUser(event) {
     event.preventDefault();
     try {
-      await api('/admin/users', { method: 'POST', body: JSON.stringify(userForm) });
-      setUserForm({ username: '', password: '', role: 'admin' });
+      const method = userForm.id ? 'PUT' : 'POST';
+      const path = userForm.id ? '/admin/users/' + userForm.id : '/admin/users';
+      await api(path, { method, body: JSON.stringify(userForm) });
+      setUserForm({ id: null, username: '', display_name: '', password: '', role: 'secretaria', is_active: true });
+      setShowUserForm(false);
       await loadUsers();
-      show('Usuário criado com sucesso.');
+      show(userForm.id ? 'Usuário atualizado com sucesso.' : 'Usuário criado com sucesso.');
     } catch (error) { show(error.message); }
   }
 
   async function resetUserPassword(user) {
-    const password = resetPasswords[user.id] || '';
+    if (!window.confirm('Redefinir a senha do usuário ' + user.username + '?')) return;
+    const password = window.prompt('Digite a nova senha para ' + user.username + ' (mínimo 6 caracteres):');
+    if (password === null) return;
     if (!password || password.length < 6) {
       show('Informe uma senha com pelo menos 6 caracteres.');
       return;
@@ -330,8 +362,6 @@ export default function Secretaria() {
 
     try {
       const data = await api('/admin/users/' + user.id + '/password', { method: 'PUT', body: JSON.stringify({ password }) });
-      setResetPasswords((current) => ({ ...current, [user.id]: '' }));
-      await loadUsers();
       show(data.message);
     } catch (error) { show(error.message); }
   }
@@ -394,7 +424,7 @@ export default function Secretaria() {
       <main className="content-section page-section narrow">
         <section className="admin-panel">
           <p className="eyebrow">Área administrativa</p>
-          <h1>Secretaria</h1>
+          <h1>Painel Administrativo</h1>
           {notice && <p className="notice">{notice}</p>}
           <form className="admin-form" onSubmit={doLogin}>
             <label><span>Usuário</span><input value={login.username} onChange={(e) => setLogin({ ...login, username: e.target.value })} required /></label>
@@ -411,15 +441,15 @@ export default function Secretaria() {
       <header className="admin-topbar">
         <div className="admin-title-wrap">
           <img src="/logo.jpg" alt="Logo IECLB" />
-          <div><p className="eyebrow">Área administrativa</p><h1>Secretaria</h1></div>
+          <div><p className="eyebrow">Área administrativa</p><h1>Painel Administrativo</h1><span className="admin-user-chip">{currentUser?.display_name || currentUser?.username} • {isAdmin ? 'Admin' : 'Secretaria'}</span></div>
         </div>
-        <button className="button ghost" onClick={() => { setToken(null); setLogged(false); }}><LogOut size={20} /> Sair</button>
+        <button className="button ghost" onClick={() => { clearSession(); setCurrentUser(null); setLogged(false); }}><LogOut size={20} /> Sair</button>
       </header>
       {notice && <p className="notice admin-notice">{notice}</p>}
 
       <div className="admin-workspace">
         <nav className="admin-side-menu" aria-label="Menu administrativo">
-          {adminSections.map((section) => {
+          {visibleAdminSections.map((section) => {
             const Icon = section.icon;
             return <button key={section.id} className={activeSection === section.id ? 'active' : ''} type="button" onClick={() => setActiveSection(section.id)}><Icon size={24} />{section.label}</button>;
           })}
@@ -505,42 +535,46 @@ export default function Secretaria() {
             </section>
           )}
 
-          {activeSection === 'settings' && (
+          {activeSection === 'users' && isAdmin && (
             <div className="admin-section-stack">
-              <section className="admin-panel settings-panel">
-                <div className="admin-section-heading"><h2>Configurações</h2><p>Altere sua senha e gerencie usuários de acesso à Secretaria.</p></div>
-                <form className="admin-form settings-form" onSubmit={changePassword}>
-                  <h3>Alterar minha senha</h3>
-                  <label><span>Senha atual</span><input type="password" value={passwords.currentPassword} onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })} required /></label>
-                  <label><span>Nova senha</span><input type="password" minLength="6" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} required /></label>
-                  <button className="button primary" type="submit"><Lock size={20} /> Alterar senha</button>
-                </form>
-              </section>
-
               <section className="admin-panel settings-panel user-management-panel">
-                <div className="admin-section-heading"><h2>Usuários</h2><p>Crie um acesso de segurança ou redefina a senha da Secretaria.</p></div>
-                <form className="admin-form user-create-form" onSubmit={createUser}>
-                  <h3>Novo usuário</h3>
-                  <div className="form-grid">
-                    <label><span>Usuário</span><input value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} placeholder="admin" required /></label>
-                    <label><span>Senha inicial</span><input type="password" minLength="6" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} required /></label>
-                  </div>
-                  <button className="button primary" type="submit"><Plus size={20} /> Criar usuário</button>
-                </form>
+                <div className="admin-section-heading row"><div><h2>Usuários</h2><p>Gerencie acessos administrativos e senhas de recuperação.</p></div><button className="button primary" type="button" onClick={newUser}><Plus size={20} /> Novo usuário</button></div>
+                {showUserForm && (
+                  <form className="admin-form user-create-form" onSubmit={saveUser}>
+                    <div className="section-heading compact"><h3>{userForm.id ? 'Editar usuário' : 'Novo usuário'}</h3><button className="button ghost" type="button" onClick={() => setShowUserForm(false)}><X size={20} /> Fechar</button></div>
+                    <div className="form-grid">
+                      <label><span>Usuário/login</span><input value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} required /></label>
+                      <label><span>Nome de exibição</span><input value={userForm.display_name} onChange={(e) => setUserForm({ ...userForm, display_name: e.target.value })} required /></label>
+                      <label><span>Perfil</span><select value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}><option value="secretaria">Secretaria</option><option value="admin">Admin</option></select></label>
+                      <label><span>Status</span><select value={userForm.is_active ? '1' : '0'} onChange={(e) => setUserForm({ ...userForm, is_active: e.target.value === '1' })}><option value="1">Ativo</option><option value="0">Inativo</option></select></label>
+                      {!userForm.id && <label><span>Senha inicial</span><input type="password" minLength="6" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} required /></label>}
+                    </div>
+                    <div className="button-row"><button className="button primary" type="submit"><Save size={20} /> Salvar usuário</button><button className="button ghost" type="button" onClick={() => setShowUserForm(false)}>Cancelar</button></div>
+                  </form>
+                )}
                 <div className="admin-event-list user-list">
                   {users.map((user) => (
                     <article className="admin-event-row user-row" key={user.id}>
-                      <div><strong>{user.username}</strong><span>Perfil: {user.role || 'admin'}</span><span>Criado em {user.created_at}</span></div>
-                      <div className="user-password-actions">
-                        <input type="password" minLength="6" placeholder="Nova senha" value={resetPasswords[user.id] || ''} onChange={(e) => setResetPasswords((current) => ({ ...current, [user.id]: e.target.value }))} />
-                        <div className="button-row small"><button className="button secondary" type="button" onClick={() => resetUserPassword(user)}>Redefinir senha</button><button className="icon-button danger" type="button" onClick={() => deleteUser(user)} aria-label="Excluir usuário"><Trash2 size={20} /></button></div>
-                      </div>
+                      <div><strong>{user.display_name || user.username}</strong><span>Login: {user.username}</span><span>Perfil: {user.role === 'admin' ? 'Admin' : 'Secretaria'} • {user.is_active ? 'Ativo' : 'Inativo'}</span></div>
+                      <div className="button-row small"><button className="button ghost" type="button" onClick={() => editUser(user)}>Editar</button><button className="button secondary" type="button" onClick={() => resetUserPassword(user)}>Redefinir senha</button><button className="icon-button danger" type="button" onClick={() => deleteUser(user)} aria-label="Excluir usuário"><Trash2 size={20} /></button></div>
                     </article>
                   ))}
                   {users.length === 0 && <p className="status-message">Nenhum usuário encontrado.</p>}
                 </div>
               </section>
             </div>
+          )}
+
+          {activeSection === 'settings' && (
+            <section className="admin-panel settings-panel">
+              <div className="admin-section-heading"><h2>Configurações</h2><p>Altere sua própria senha de acesso.</p></div>
+              <form className="admin-form settings-form" onSubmit={changePassword}>
+                <h3>Alterar minha senha</h3>
+                <label><span>Senha atual</span><input type="password" value={passwords.currentPassword} onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })} required /></label>
+                <label><span>Nova senha</span><input type="password" minLength="6" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} required /></label>
+                <button className="button primary" type="submit"><Lock size={20} /> Alterar senha</button>
+              </form>
+            </section>
           )}
         </section>
       </div>
