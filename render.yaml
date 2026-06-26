@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: agenda-ieclb-santa-rosa
+    env: node
+    plan: free
+    buildCommand: npm run render:build
+    startCommand: npm run render:start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: DATABASE_FILE
+        value: ./data/database.sqlite
+      - key: FRONTEND_URL
+        value: https://agenda-ieclb-santa-rosa.onrender.com

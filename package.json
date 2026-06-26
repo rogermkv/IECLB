@@ -1,0 +1,24 @@
+{
+  "name": "agenda-ieclb-santa-rosa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agenda digital da Igreja IECLB de Santa Rosa - RS",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "backend": "npm run dev --prefix backend",
+    "frontend": "npm run dev --prefix frontend",
+    "import": "npm run import --prefix backend",
+    "seed-admin": "npm run seed-admin --prefix backend",
+    "build": "npm run build --prefix frontend",
+    "start": "npm start --prefix backend",
+    "render:build": "npm run install:all && npm run build",
+    "render:start": "npm run seed-admin --prefix backend && npm run import --prefix backend && npm start --prefix backend"
+  },
+  "keywords": [
+    "ieclb",
+    "agenda",
+    "igreja"
+  ],
+  "author": "IECLB Santa Rosa",
+  "license": "MIT"
+}
