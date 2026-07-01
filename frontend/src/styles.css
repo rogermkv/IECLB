@@ -623,11 +623,11 @@ body {
   gap: 8px;
   margin: 0 0 12px;
   padding: clamp(12px, 2vw, 18px);
-  background: linear-gradient(180deg, #ffffff 0%, #fff8f0 100%);
+  background: #ffffff;
   border: 1px solid var(--soft-line);
-  border-left: 8px solid var(--wine);
+  border-left: 5px solid var(--wine);
   border-radius: 8px;
-  box-shadow: 0 14px 30px rgba(118, 6, 13, 0.08);
+  box-shadow: 0 8px 18px rgba(118, 6, 13, 0.05);
 }
 
 .daily-word-heading {
@@ -640,10 +640,10 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
   border-radius: 8px;
-  background: var(--wine-soft);
+  background: #fff7f7;
   color: var(--wine);
 }
 
@@ -714,8 +714,8 @@ body {
   }
 
   .daily-word-heading > span {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
   }
 
   .verse-button {
@@ -723,7 +723,6 @@ body {
     min-height: 48px;
   }
 }
-
 .home-action-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1576,18 +1575,19 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 18px;
-  margin: 22px 0;
-  padding: clamp(20px, 4vw, 30px);
-  border-left: 8px solid var(--wine);
-  background: linear-gradient(180deg, #fffefe 0%, #fff8f4 100%);
+  gap: 12px;
+  margin: 12px 0;
+  padding: clamp(14px, 3vw, 20px);
+  border-left: 5px solid var(--wine);
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(118, 6, 13, 0.05);
 }
 
 .prayer-home-card h2 {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: #302b2b;
-  font-size: clamp(1.25rem, 3vw, 1.7rem);
-  line-height: 1.25;
+  font-size: clamp(1.08rem, 2.5vw, 1.32rem);
+  line-height: 1.22;
 }
 
 .prayer-home-actions {
@@ -1603,14 +1603,13 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 62px;
-  padding: 14px 20px;
+  gap: 8px;
+  min-height: 50px;
+  padding: 10px 16px;
   border-radius: 8px;
-  font-size: clamp(1.05rem, 2.5vw, 1.22rem);
+  font-size: 1rem;
   font-weight: 900;
   text-decoration: none;
-  cursor: pointer;
 }
 
 .prayer-primary-button,
@@ -1802,6 +1801,9 @@ body {
 @media (max-width: 720px) {
   .prayer-home-card {
     grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 10px 0;
+    padding: 14px;
   }
 
   .prayer-home-actions,
@@ -1815,8 +1817,6 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 }
-
-
 /* Secretaria dashboard */
 .admin-shell {
   width: min(1280px, calc(100% - 28px));
@@ -2121,6 +2121,9 @@ body {
   border: 1px solid var(--line);
   border-radius: 8px;
 }
+
+
+
 
 
 

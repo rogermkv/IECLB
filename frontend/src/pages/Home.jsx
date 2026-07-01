@@ -1,4 +1,4 @@
-import { BookOpen, CalendarDays, MapPin, MessageCircle, RefreshCw } from 'lucide-react';
+﻿import { BookOpen, CalendarDays, MapPin, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, formatDate, formatTime } from '../services/api.js';
@@ -6,36 +6,36 @@ import { AnnouncementCard } from './Announcements.jsx';
 
 
 const verses = [
-  { text: 'O Senhor é o meu pastor; nada me faltará.', reference: 'Salmos 23.1' },
-  { text: 'Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.', reference: 'Salmos 37.5' },
-  { text: 'Deus é o nosso refúgio e fortaleza, socorro bem presente nas tribulações.', reference: 'Salmos 46.1' },
-  { text: 'Lâmpada para os meus pés é a tua palavra e luz para o meu caminho.', reference: 'Salmos 119.105' },
-  { text: 'Este é o dia que o Senhor fez; regozijemo-nos e alegremo-nos nele.', reference: 'Salmos 118.24' },
-  { text: 'O choro pode durar uma noite, mas a alegria vem pela manhã.', reference: 'Salmos 30.5' },
+  { text: 'O Senhor Ã© o meu pastor; nada me faltarÃ¡.', reference: 'Salmos 23.1' },
+  { text: 'Entrega o teu caminho ao Senhor; confia nele, e ele tudo farÃ¡.', reference: 'Salmos 37.5' },
+  { text: 'Deus Ã© o nosso refÃºgio e fortaleza, socorro bem presente nas tribulaÃ§Ãµes.', reference: 'Salmos 46.1' },
+  { text: 'LÃ¢mpada para os meus pÃ©s Ã© a tua palavra e luz para o meu caminho.', reference: 'Salmos 119.105' },
+  { text: 'Este Ã© o dia que o Senhor fez; regozijemo-nos e alegremo-nos nele.', reference: 'Salmos 118.24' },
+  { text: 'O choro pode durar uma noite, mas a alegria vem pela manhÃ£.', reference: 'Salmos 30.5' },
   { text: 'Aquietai-vos e sabei que eu sou Deus.', reference: 'Salmos 46.10' },
-  { text: 'O Senhor te guardará de todo mal; guardará a tua alma.', reference: 'Salmos 121.7' },
-  { text: 'Confia no Senhor de todo o teu coração e não te estribes no teu próprio entendimento.', reference: 'Provérbios 3.5' },
-  { text: 'Sobre tudo o que se deve guardar, guarda o teu coração.', reference: 'Provérbios 4.23' },
-  { text: 'O coração alegre é bom remédio.', reference: 'Provérbios 17.22' },
-  { text: 'Não temas, porque eu sou contigo; não te assombres, porque eu sou o teu Deus.', reference: 'Isaías 41.10' },
-  { text: 'Os que esperam no Senhor renovam as suas forças.', reference: 'Isaías 40.31' },
-  { text: 'Eu é que sei que pensamentos tenho a vosso respeito, pensamentos de paz.', reference: 'Jeremias 29.11' },
-  { text: 'As misericórdias do Senhor são a causa de não sermos consumidos.', reference: 'Lamentações 3.22' },
-  { text: 'Buscai, pois, em primeiro lugar, o Reino de Deus e a sua justiça.', reference: 'Mateus 6.33' },
+  { text: 'O Senhor te guardarÃ¡ de todo mal; guardarÃ¡ a tua alma.', reference: 'Salmos 121.7' },
+  { text: 'Confia no Senhor de todo o teu coraÃ§Ã£o e nÃ£o te estribes no teu prÃ³prio entendimento.', reference: 'ProvÃ©rbios 3.5' },
+  { text: 'Sobre tudo o que se deve guardar, guarda o teu coraÃ§Ã£o.', reference: 'ProvÃ©rbios 4.23' },
+  { text: 'O coraÃ§Ã£o alegre Ã© bom remÃ©dio.', reference: 'ProvÃ©rbios 17.22' },
+  { text: 'NÃ£o temas, porque eu sou contigo; nÃ£o te assombres, porque eu sou o teu Deus.', reference: 'IsaÃ­as 41.10' },
+  { text: 'Os que esperam no Senhor renovam as suas forÃ§as.', reference: 'IsaÃ­as 40.31' },
+  { text: 'Eu Ã© que sei que pensamentos tenho a vosso respeito, pensamentos de paz.', reference: 'Jeremias 29.11' },
+  { text: 'As misericÃ³rdias do Senhor sÃ£o a causa de nÃ£o sermos consumidos.', reference: 'LamentaÃ§Ãµes 3.22' },
+  { text: 'Buscai, pois, em primeiro lugar, o Reino de Deus e a sua justiÃ§a.', reference: 'Mateus 6.33' },
   { text: 'Vinde a mim, todos os que estais cansados e sobrecarregados, e eu vos aliviarei.', reference: 'Mateus 11.28' },
-  { text: 'Porque para Deus não haverá impossíveis em todas as suas promessas.', reference: 'Lucas 1.37' },
-  { text: 'Eu sou o caminho, e a verdade, e a vida.', reference: 'João 14.6' },
-  { text: 'Deixo-vos a paz, a minha paz vos dou.', reference: 'João 14.27' },
-  { text: 'Porque Deus amou ao mundo de tal maneira que deu o seu Filho unigênito.', reference: 'João 3.16' },
+  { text: 'Porque para Deus nÃ£o haverÃ¡ impossÃ­veis em todas as suas promessas.', reference: 'Lucas 1.37' },
+  { text: 'Eu sou o caminho, e a verdade, e a vida.', reference: 'JoÃ£o 14.6' },
+  { text: 'Deixo-vos a paz, a minha paz vos dou.', reference: 'JoÃ£o 14.27' },
+  { text: 'Porque Deus amou ao mundo de tal maneira que deu o seu Filho unigÃªnito.', reference: 'JoÃ£o 3.16' },
   { text: 'Tudo posso naquele que me fortalece.', reference: 'Filipenses 4.13' },
   { text: 'Alegrai-vos sempre no Senhor; outra vez digo: alegrai-vos.', reference: 'Filipenses 4.4' },
-  { text: 'O meu Deus suprirá todas as necessidades de vocês.', reference: 'Filipenses 4.19' },
-  { text: 'Lançando sobre ele toda a vossa ansiedade, porque ele tem cuidado de vós.', reference: '1 Pedro 5.7' },
-  { text: 'Se Deus é por nós, quem será contra nós?', reference: 'Romanos 8.31' },
+  { text: 'O meu Deus suprirÃ¡ todas as necessidades de vocÃªs.', reference: 'Filipenses 4.19' },
+  { text: 'LanÃ§ando sobre ele toda a vossa ansiedade, porque ele tem cuidado de vÃ³s.', reference: '1 Pedro 5.7' },
+  { text: 'Se Deus Ã© por nÃ³s, quem serÃ¡ contra nÃ³s?', reference: 'Romanos 8.31' },
   { text: 'Todas as coisas cooperam para o bem daqueles que amam a Deus.', reference: 'Romanos 8.28' },
-  { text: 'Agora, pois, permanecem a fé, a esperança e o amor.', reference: '1 Coríntios 13.13' },
-  { text: 'Sede fortes e corajosos; não temais, nem vos atemorizeis.', reference: 'Deuteronômio 31.6' },
-  { text: 'Eu e a minha casa serviremos ao Senhor.', reference: 'Josué 24.15' }
+  { text: 'Agora, pois, permanecem a fÃ©, a esperanÃ§a e o amor.', reference: '1 CorÃ­ntios 13.13' },
+  { text: 'Sede fortes e corajosos; nÃ£o temais, nem vos atemorizeis.', reference: 'DeuteronÃ´mio 31.6' },
+  { text: 'Eu e a minha casa serviremos ao Senhor.', reference: 'JosuÃ© 24.15' }
 ];
 
 function randomVerseIndex(previousIndex = -1) {
@@ -140,16 +140,16 @@ export default function Home() {
           <span><BookOpen size={32} aria-hidden="true" /></span>
           <div>
             <p>Palavra do Dia</p>
-            <h2>Um versículo para hoje</h2>
+            <h2>Um versÃ­culo para hoje</h2>
           </div>
         </div>
         <blockquote>
-          <p>“{currentVerse.text}”</p>
+          <p>â€œ{currentVerse.text}â€</p>
           <cite>{currentVerse.reference}</cite>
         </blockquote>
         <button className="verse-button" type="button" onClick={showAnotherVerse}>
           <RefreshCw size={24} aria-hidden="true" />
-          Outro versículo
+          Outro versÃ­culo
         </button>
       </section>
 
@@ -169,22 +169,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="home-action-grid" aria-label="Ações principais">
-        <Link className="home-action-card action-calendar" to="/agenda">
-          <CalendarDays size={44} aria-hidden="true" />
-          <strong>Calendário</strong>
-          <span>Todos os eventos</span>
-        </Link>
-        <a className="home-action-card action-contact" href="https://wa.me/555599699939" target="_blank" rel="noreferrer">
-          <MessageCircle size={48} aria-hidden="true" />
-          <strong>Contato</strong>
-          <span>Fale conosco</span>
-        </a>
-      </section>
-
-      <section className="prayer-home-card" aria-label="Pedidos de Oração">
+      <section className="prayer-home-card" aria-label="Pedidos de OraÃ§Ã£o">
         <div>
-          <p className="section-kicker">🙏 Pedidos de Oração</p>
+          <p className="section-kicker">ðŸ™ Pedidos de OraÃ§Ã£o</p>
           <h2>Compartilhe um pedido ou acompanhe os pedidos da comunidade.</h2>
         </div>
         <div className="prayer-home-actions">
@@ -193,17 +180,17 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="next-days-section" id="proximos-dias" aria-label="Próximos 5 dias">
+      <section className="next-days-section" id="proximos-dias" aria-label="PrÃ³ximos 5 dias">
         <div className="next-days-heading">
           <div>
-            <p className="section-kicker"><CalendarDays size={24} aria-hidden="true" /> Próximos 5 dias</p>
+            <p className="section-kicker"><CalendarDays size={24} aria-hidden="true" /> PrÃ³ximos 5 dias</p>
             <h2>Atividades da comunidade</h2>
           </div>
           <Link to="/agenda">Ver todos</Link>
         </div>
 
         {message && <p className="status-message home-status">{message}</p>}
-        {!message && fiveDays.length === 0 && <p className="status-message home-status">Nenhum evento encontrado nos próximos dias.</p>}
+        {!message && fiveDays.length === 0 && <p className="status-message home-status">Nenhum evento encontrado nos prÃ³ximos dias.</p>}
         <div className="next-days-list">
           {fiveDays.map((group, index) => <EventDayCard key={group.date} group={group} index={index} />)}
         </div>
@@ -211,3 +198,4 @@ export default function Home() {
     </main>
   );
 }
+

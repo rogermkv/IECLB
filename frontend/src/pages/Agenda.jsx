@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api.js';
 import EventCard from '../components/EventCard.jsx';
 import Filters from '../components/Filters.jsx';
@@ -25,7 +25,8 @@ export default function Agenda() {
     const term = filters.search.toLowerCase().trim();
     return events.filter((event) => {
       const monthOk = !filters.month || event.date.startsWith(filters.month);
-      const categoryOk = !filters.category || event.category === filters.category;
+      const categoryText = [event.category, event.title, event.location, event.audience, event.description, event.notes].join(' ').toLowerCase();
+      const categoryOk = !filters.category || event.category === filters.category || (filters.category === 'OASE' && categoryText.includes('oase'));
       const locationOk = !filters.location || event.location === filters.location;
       const searchText = [event.title, event.category, event.location, event.audience, event.description, event.notes].join(' ').toLowerCase();
       const searchOk = !term || searchText.includes(term);
@@ -37,7 +38,7 @@ export default function Agenda() {
     <main className="content-section page-section">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Calendário da comunidade</p>
+          <p className="eyebrow">CalendÃ¡rio da comunidade</p>
           <h1>Agenda completa</h1>
         </div>
       </div>
@@ -50,3 +51,4 @@ export default function Agenda() {
     </main>
   );
 }
+

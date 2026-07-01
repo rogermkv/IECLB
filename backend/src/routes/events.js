@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import { all, get, run } from '../db.js';
 
 const router = express.Router();
@@ -21,8 +21,8 @@ function validateRsvpPayload(payload) {
 
 async function eventAllowsRsvp(eventId) {
   const event = await get('SELECT id, allow_rsvp, show_rsvp_names_public FROM events WHERE id = ?', [eventId]);
-  if (!event) return { error: 'Evento não encontrado.', status: 404 };
-  if (!event.allow_rsvp) return { error: 'Este evento não permite confirmação de presença.', status: 400, event };
+  if (!event) return { error: 'Evento nÃ£o encontrado.', status: 404 };
+  if (!event.allow_rsvp) return { error: 'Este evento nÃ£o permite confirmaÃ§Ã£o de presenÃ§a.', status: 400, event };
   return { event };
 }
 
@@ -45,8 +45,13 @@ function buildFilters(query) {
     params.push(query.month);
   }
   if (query.category) {
-    where.push('category = ?');
-    params.push(query.category);
+    if (query.category === 'OASE') {
+      where.push('(category = ? OR title LIKE ? OR location LIKE ? OR audience LIKE ? OR description LIKE ? OR notes LIKE ?)');
+      params.push(query.category, '%OASE%', '%OASE%', '%OASE%', '%OASE%', '%OASE%');
+    } else {
+      where.push('category = ?');
+      params.push(query.category);
+    }
   }
   if (query.location) {
     where.push('location = ?');
@@ -67,17 +72,17 @@ router.get('/events', async (req, res) => {
     const events = await all('SELECT * FROM events ' + filters.clause + ' ORDER BY date ASC, start_time ASC, title ASC', filters.params);
     res.json(events);
   } catch {
-    res.status(500).json({ message: 'Não foi possível carregar os eventos.' });
+    res.status(500).json({ message: 'NÃ£o foi possÃ­vel carregar os eventos.' });
   }
 });
 
 router.get('/events/:id', async (req, res) => {
   try {
     const event = await get('SELECT * FROM events WHERE id = ?', [req.params.id]);
-    if (!event) return res.status(404).json({ message: 'Evento não encontrado.' });
+    if (!event) return res.status(404).json({ message: 'Evento nÃ£o encontrado.' });
     return res.json(event);
   } catch {
-    return res.status(500).json({ message: 'Não foi possível carregar o evento.' });
+    return res.status(500).json({ message: 'NÃ£o foi possÃ­vel carregar o evento.' });
   }
 });
 
@@ -86,18 +91,18 @@ router.get('/events/:id', async (req, res) => {
 router.get('/events/:id/rsvp-summary', async (req, res) => {
   try {
     const event = await get('SELECT id, allow_rsvp, show_rsvp_names_public FROM events WHERE id = ?', [req.params.id]);
-    if (!event) return res.status(404).json({ message: 'Evento não encontrado.' });
+    if (!event) return res.status(404).json({ message: 'Evento nÃ£o encontrado.' });
     const summary = await rsvpSummary(req.params.id, clean(req.query.device_token));
     res.json({ ...summary, allow_rsvp: Boolean(event.allow_rsvp), show_rsvp_names_public: Boolean(event.show_rsvp_names_public) });
   } catch {
-    res.status(500).json({ message: 'Não foi possível carregar as confirmações.' });
+    res.status(500).json({ message: 'NÃ£o foi possÃ­vel carregar as confirmaÃ§Ãµes.' });
   }
 });
 
 router.get('/events/:id/rsvps-public', async (req, res) => {
   try {
     const event = await get('SELECT id, show_rsvp_names_public FROM events WHERE id = ?', [req.params.id]);
-    if (!event) return res.status(404).json({ message: 'Evento não encontrado.' });
+    if (!event) return res.status(404).json({ message: 'Evento nÃ£o encontrado.' });
     if (!event.show_rsvp_names_public) return res.json([]);
     const rows = await all('SELECT quantity, names_json FROM rsvps WHERE event_id = ? ORDER BY datetime(created_at) ASC, id ASC', [req.params.id]);
     const names = rows.flatMap((row) => {
@@ -106,56 +111,59 @@ router.get('/events/:id/rsvps-public', async (req, res) => {
     });
     res.json(names);
   } catch {
-    res.status(500).json({ message: 'Não foi possível carregar os participantes.' });
+    res.status(500).json({ message: 'NÃ£o foi possÃ­vel carregar os participantes.' });
   }
 });
 
 router.post('/events/:id/rsvp', async (req, res) => {
   try {
     const deviceToken = clean(req.body.device_token);
-    if (!deviceToken) return res.status(400).json({ message: 'Não foi possível identificar este dispositivo.' });
+    if (!deviceToken) return res.status(400).json({ message: 'NÃ£o foi possÃ­vel identificar este dispositivo.' });
     const allowed = await eventAllowsRsvp(req.params.id);
     if (allowed.error) return res.status(allowed.status).json({ message: allowed.error });
     const { quantity, names, errors } = validateRsvpPayload(req.body);
     if (errors.length) return res.status(400).json({ message: errors.join(' ') });
     await run('INSERT INTO rsvps (event_id, device_token, quantity, names_json) VALUES (?, ?, ?, ?)', [req.params.id, deviceToken, quantity, JSON.stringify(names)]);
-    res.status(201).json({ message: 'Presença confirmada com sucesso.', ...(await rsvpSummary(req.params.id, deviceToken)) });
+    res.status(201).json({ message: 'PresenÃ§a confirmada com sucesso.', ...(await rsvpSummary(req.params.id, deviceToken)) });
   } catch (error) {
-    if (String(error.message || '').includes('UNIQUE')) return res.status(409).json({ message: 'Você já confirmou presença neste evento.' });
-    res.status(500).json({ message: 'Não foi possível confirmar presença.' });
+    if (String(error.message || '').includes('UNIQUE')) return res.status(409).json({ message: 'VocÃª jÃ¡ confirmou presenÃ§a neste evento.' });
+    res.status(500).json({ message: 'NÃ£o foi possÃ­vel confirmar presenÃ§a.' });
   }
 });
 
 router.put('/events/:id/rsvp', async (req, res) => {
   try {
     const deviceToken = clean(req.body.device_token);
-    if (!deviceToken) return res.status(400).json({ message: 'Não foi possível identificar este dispositivo.' });
+    if (!deviceToken) return res.status(400).json({ message: 'NÃ£o foi possÃ­vel identificar este dispositivo.' });
     const allowed = await eventAllowsRsvp(req.params.id);
     if (allowed.error) return res.status(allowed.status).json({ message: allowed.error });
     const { quantity, names, errors } = validateRsvpPayload(req.body);
     if (errors.length) return res.status(400).json({ message: errors.join(' ') });
     const result = await run('UPDATE rsvps SET quantity = ?, names_json = ?, updated_at = CURRENT_TIMESTAMP WHERE event_id = ? AND device_token = ?', [quantity, JSON.stringify(names), req.params.id, deviceToken]);
-    if (!result.changes) return res.status(404).json({ message: 'Confirmação não encontrada.' });
-    res.json({ message: 'Presença atualizada com sucesso.', ...(await rsvpSummary(req.params.id, deviceToken)) });
+    if (!result.changes) return res.status(404).json({ message: 'ConfirmaÃ§Ã£o nÃ£o encontrada.' });
+    res.json({ message: 'PresenÃ§a atualizada com sucesso.', ...(await rsvpSummary(req.params.id, deviceToken)) });
   } catch {
-    res.status(500).json({ message: 'Não foi possível atualizar a confirmação.' });
+    res.status(500).json({ message: 'NÃ£o foi possÃ­vel atualizar a confirmaÃ§Ã£o.' });
   }
 });
 
 router.delete('/events/:id/rsvp', async (req, res) => {
   try {
     const deviceToken = clean(req.body.device_token || req.query.device_token);
-    if (!deviceToken) return res.status(400).json({ message: 'Não foi possível identificar este dispositivo.' });
+    if (!deviceToken) return res.status(400).json({ message: 'NÃ£o foi possÃ­vel identificar este dispositivo.' });
     await run('DELETE FROM rsvps WHERE event_id = ? AND device_token = ?', [req.params.id, deviceToken]);
-    res.json({ message: 'Confirmação cancelada com sucesso.', ...(await rsvpSummary(req.params.id, deviceToken)) });
+    res.json({ message: 'ConfirmaÃ§Ã£o cancelada com sucesso.', ...(await rsvpSummary(req.params.id, deviceToken)) });
   } catch {
-    res.status(500).json({ message: 'Não foi possível cancelar a confirmação.' });
+    res.status(500).json({ message: 'NÃ£o foi possÃ­vel cancelar a confirmaÃ§Ã£o.' });
   }
 });
 
 router.get('/categories', async (_req, res) => {
   const rows = await all("SELECT DISTINCT category FROM events WHERE category IS NOT NULL AND category <> '' ORDER BY category");
-  res.json(rows.map((row) => row.category));
+  const categories = rows.map((row) => row.category);
+  const hasOase = await get("SELECT id FROM events WHERE category = 'OASE' OR title LIKE '%OASE%' OR location LIKE '%OASE%' OR audience LIKE '%OASE%' OR description LIKE '%OASE%' OR notes LIKE '%OASE%' LIMIT 1");
+  if (hasOase && !categories.includes('OASE')) categories.push('OASE');
+  res.json(categories.sort((a, b) => a.localeCompare(b, 'pt-BR')));
 });
 
 router.get('/locations', async (_req, res) => {
@@ -164,3 +172,4 @@ router.get('/locations', async (_req, res) => {
 });
 
 export default router;
+
