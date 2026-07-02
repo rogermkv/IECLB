@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api.js';
 import EventCard from '../components/EventCard.jsx';
 import Filters from '../components/Filters.jsx';
@@ -38,7 +38,7 @@ export default function Agenda() {
     <main className="content-section page-section">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">CalendÃ¡rio da comunidade</p>
+          <p className="eyebrow">Calendário da comunidade</p>
           <h1>Agenda completa</h1>
         </div>
       </div>

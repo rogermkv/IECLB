@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --blue: #1f5b9f;
   --deep-blue: #174275;
   --green: #4f8a3b;
@@ -1380,7 +1380,7 @@ body {
 }
 
 
-/* ConfirmaÃ§Ã£o de presenÃ§a */
+/* Confirmação de presença */
 .rsvp-box {
   display: grid;
   gap: 12px;
@@ -1560,7 +1560,7 @@ body {
 }
 
 
-/* Pedidos de OraÃ§Ã£o */
+/* Pedidos de Oração */
 .prayer-home-card,
 .prayer-form-card,
 .prayer-public-card,

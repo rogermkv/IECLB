@@ -1,16 +1,16 @@
-﻿import { CalendarDays, Home, LockKeyhole, Megaphone, MessageCircle, Search } from 'lucide-react';
+import { CalendarDays, Home, LockKeyhole, Megaphone, MessageCircle, Search } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 
 export default function Header() {
   return (
     <>
       <header className="site-header app-header">
-        <Link to="/" className="brand app-brand" aria-label="IECLB Comunidade EvangÃ©lica da Paz">
+        <Link to="/" className="brand app-brand" aria-label="IECLB Comunidade Evangélica da Paz">
           <img src="/logo.jpg" alt="Logo IECLB" />
           <div>
             <strong>IECLB</strong>
-            <span>Igreja EvangÃ©lica de ConfissÃ£o Luterana no Brasil</span>
-            <em>Comunidade EvangÃ©lica da Paz</em>
+            <span>Igreja Evangélica de Confissão Luterana no Brasil</span>
+            <em>Comunidade Evangélica da Paz</em>
           </div>
         </Link>
         <Link className="secretary-button" to="/secretaria">
@@ -19,10 +19,10 @@ export default function Header() {
         </Link>
       </header>
 
-      <nav className="mobile-bottom-nav" aria-label="NavegaÃ§Ã£o do aplicativo">
+      <nav className="mobile-bottom-nav" aria-label="Navegação do aplicativo">
         <NavLink to="/" end>
           <Home size={26} aria-hidden="true" />
-          <span>InÃ­cio</span>
+          <span>Início</span>
         </NavLink>
         <NavLink to="/agenda">
           <CalendarDays size={26} aria-hidden="true" />
