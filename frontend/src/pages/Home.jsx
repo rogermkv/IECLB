@@ -1,7 +1,7 @@
 import { BookOpen, CalendarDays, MapPin, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, formatDate, formatTime } from '../services/api.js';
+import { api, formatTime } from '../services/api.js';
 import { AnnouncementCard } from './Announcements.jsx';
 
 const verses = [
@@ -59,7 +59,7 @@ function todayIso() {
 }
 
 function dayColor(index) {
-  const colors = ['wine', 'green', 'purple', 'gold', 'red'];
+  const colors = ['tone-red', 'tone-green', 'tone-purple', 'tone-gold', 'tone-bright'];
   return colors[index % colors.length];
 }
 
@@ -176,20 +176,20 @@ export default function Home() {
           {dates.map((date, index) => {
             const parsedDate = localDateFromIso(date);
             return (
-              <article className="day-block" key={date}>
+              <article className="day-card" key={date}>
                 <div className={`date-badge ${dayColor(index)}`}>
                   <span>{weekdayName(parsedDate)}</span>
                   <strong>{String(parsedDate.getDate()).padStart(2, '0')}</strong>
-                  <span>{monthName(parsedDate)}</span>
+                  <small>{monthName(parsedDate)}</small>
                 </div>
                 <div className="day-events">
                   {groupedDays[date].map((event) => (
-                    <Link className="event-row" key={event.id} to={`/eventos/${event.id}`}>
+                    <Link className="day-event" key={event.id} to={`/eventos/${event.id}`}>
                       <time>{formatTime(event.start_time) || 'A confirmar'}</time>
                       <div>
                         <strong>{event.title}</strong>
                         <span>{event.category}</span>
-                        {event.location && <small><MapPin size={16} aria-hidden="true" />{event.location}</small>}
+                        {event.location && <em><MapPin size={16} aria-hidden="true" />{event.location}</em>}
                       </div>
                     </Link>
                   ))}
