@@ -42,7 +42,6 @@ npm run frontend       # Vite
 
 ## Outros
 
-- `ops/devsigec/` (não versionado) tem arquivos da montagem do .98 em 2026-10-12.
 
 ## Regras gerais
 
