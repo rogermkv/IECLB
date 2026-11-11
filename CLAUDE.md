@@ -22,7 +22,7 @@ npm run frontend       # Vite
 | URL | http://192.168.0.98:8081 | https://ieclb.sistemasmkv.com.br |
 | API | 127.0.0.1:3335 (`/health`) | 127.0.0.1:3335 (`/health`) |
 | Banco | SQLite (`DATABASE_FILE`) | `/opt/apps/ieclb/data/database.sqlite` |
-| Atualizar | `sudo mkv-dev-admin publish ieclb` (usuário roda) | `publicar ieclb` |
+| Atualizar | `publicar ieclb --dev` | `publicar ieclb` |
 
 ## Banco — atenção
 
