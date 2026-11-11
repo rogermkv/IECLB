@@ -71,3 +71,7 @@ Documentação: MKV_BACKUP_DIARIO_PRODUCAO.md/evidência mkv-daily-production-ba
 ## Migrations versionadas — 11/11/2026
 
 O schema deixou de ser criado/alterado no start (CREATE IF NOT EXISTS + ALTER com erro ignorado). Agora: backend/migrations/NNNN_*.sql + tabela schema_migrations (sha256), runner backend/src/migrations.js, CLI backend/scripts/migrate.js (status|apply), integrados ao deploy-one (aplicar com --migrate, backup antes). 0001_baseline = schema de 11/11 (produção e DEV idênticos); bancos existentes são adotados após conferência. A API não sobe com migration pendente; banco vazio é criado no start. Removidos os UPDATE de usuários admin/secretaria que rodavam a cada start. Testado com banco vazio, cópia da produção (308 eventos), migration nova, arquivo alterado e migration com erro (rollback).
+
+## Limpeza da estrutura — 11/11/2026
+
+Removidos render.yaml e os scripts render:* (hospedagem Render desativada). README antigo movido para docs/historico/. Branches locais antigos do Codex guardados em bundle e removidos.

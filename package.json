@@ -10,9 +10,7 @@
     "import": "npm run import --prefix backend",
     "seed-admin": "npm run seed-admin --prefix backend",
     "build": "npm run build --prefix frontend",
-    "start": "npm start --prefix backend",
-    "render:build": "npm run install:all && npm run build",
-    "render:start": "npm run seed-admin --prefix backend && npm run import --prefix backend && npm start --prefix backend"
+    "start": "npm start --prefix backend"
   },
   "keywords": [
     "ieclb",

@@ -42,7 +42,6 @@ npm run frontend       # Vite
 
 ## Outros
 
-- `render.yaml` e os scripts `render:*` são de uma hospedagem antiga (Render) e não são usados.
 - `ops/devsigec/` (não versionado) tem arquivos da montagem do .98 em 2026-10-12.
 
 ## Regras gerais
