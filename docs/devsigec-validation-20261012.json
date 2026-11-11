@@ -1,0 +1,56 @@
+{
+  "candidateCommit": "c233b8e60777a759f98b62642d87b256b36a93f1",
+  "date": "2026-10-12T19:41:20.128Z",
+  "temporaryLoopbackAdaptation": true,
+  "productionDiffsValidated": false,
+  "results": [
+    {
+      "label": "candidate health (loopback)",
+      "result": "PASS"
+    },
+    {
+      "label": "six SQLite application tables",
+      "result": "PASS"
+    },
+    {
+      "label": "SQLite integrity",
+      "result": "PASS"
+    },
+    {
+      "label": "anonymous admin access rejected",
+      "result": "PASS"
+    },
+    {
+      "label": "real JWT/bcrypt login with synthetic user",
+      "result": "PASS"
+    },
+    {
+      "label": "authenticated admin access",
+      "result": "PASS"
+    },
+    {
+      "label": "announcement create and public read",
+      "result": "PASS"
+    },
+    {
+      "label": "announcement update and delete",
+      "result": "PASS"
+    },
+    {
+      "label": "exact frontend build served",
+      "result": "PASS"
+    },
+    {
+      "label": "frontend assets and SPA fallback",
+      "result": "PASS"
+    },
+    {
+      "label": "Chromium renders real frontend",
+      "result": "PASS"
+    },
+    {
+      "label": "Chromium login and admin rendering, no page errors",
+      "result": "PASS"
+    }
+  ]
+}
