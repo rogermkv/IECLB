@@ -36,6 +36,7 @@ export function all(sql, params = []) {
 }
 
 export async function initDatabase() {
+  await run('PRAGMA foreign_keys = ON');
   await run(
     'CREATE TABLE IF NOT EXISTS events (' +
       'id INTEGER PRIMARY KEY AUTOINCREMENT,' +

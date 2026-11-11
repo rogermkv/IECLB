@@ -68,4 +68,4 @@ app.use((error, _req, res, _next) => {
 });
 
 await initDatabase();
-app.listen(config.port, () => console.log('Backend da Agenda IECLB rodando em http://localhost:' + config.port));
+app.listen(config.port, config.host, () => console.log('Backend da Agenda IECLB rodando em http://' + config.host + ':' + config.port));
