@@ -7,6 +7,7 @@ sqlite3.verbose();
 fs.mkdirSync(path.dirname(config.databaseFile), { recursive: true });
 
 export const db = new sqlite3.Database(config.databaseFile);
+db.configure('busyTimeout', 10000);
 
 export function run(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -35,99 +36,20 @@ export function all(sql, params = []) {
   });
 }
 
+// O schema é definido pelas migrations em backend/migrations (ver src/migrations.js).
+// Banco vazio (máquina de desenvolvimento): cria tudo. Banco existente com migration pendente: a API não sobe.
 export async function initDatabase() {
+  const { migrationStatus, applyMigrations } = await import('./migrations.js');
   await run('PRAGMA foreign_keys = ON');
-  await run(
-    'CREATE TABLE IF NOT EXISTS events (' +
-      'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
-      'date TEXT NOT NULL,' +
-      'start_time TEXT,' +
-      'end_time TEXT,' +
-      'title TEXT NOT NULL,' +
-      'category TEXT,' +
-      'location TEXT,' +
-      'audience TEXT,' +
-      'description TEXT,' +
-      'notes TEXT,' +
-      'allow_rsvp INTEGER NOT NULL DEFAULT 1,' +
-      'show_rsvp_names_public INTEGER NOT NULL DEFAULT 1,' +
-      'created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
-      'updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
-      'UNIQUE(date, start_time, title, location)' +
-    ')'
-  );
-
-  await run("ALTER TABLE events ADD COLUMN allow_rsvp INTEGER NOT NULL DEFAULT 1").catch(() => {});
-  await run("ALTER TABLE events ADD COLUMN show_rsvp_names_public INTEGER NOT NULL DEFAULT 1").catch(() => {});
-
-  await run(
-    'CREATE TABLE IF NOT EXISTS users (' +
-      'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
-      'username TEXT NOT NULL UNIQUE,' +
-      'display_name TEXT,' +
-      'password_hash TEXT NOT NULL,' +
-      "role TEXT NOT NULL DEFAULT 'admin'," +
-      'created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
-      'updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP' +
-    ')'
-  );
-
-
-
-  await run("ALTER TABLE users ADD COLUMN display_name TEXT").catch(() => {});
-  await run("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1").catch(() => {});
-  await run("UPDATE users SET role = 'admin', display_name = COALESCE(NULLIF(display_name, ''), 'Administrador'), is_active = 1 WHERE username = 'admin'").catch(() => {});
-  await run("UPDATE users SET role = 'secretaria', display_name = COALESCE(NULLIF(display_name, ''), 'Secretaria'), is_active = 1 WHERE username = 'secretaria'").catch(() => {});
-  await run("UPDATE users SET display_name = username WHERE display_name IS NULL OR display_name = ''").catch(() => {});
-
-  await run(
-    'CREATE TABLE IF NOT EXISTS rsvps (' +
-      'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
-      'event_id INTEGER NOT NULL,' +
-      'device_token TEXT NOT NULL,' +
-      'quantity INTEGER NOT NULL,' +
-      'names_json TEXT,' +
-      'created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
-      'updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
-      'FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE,' +
-      'UNIQUE(event_id, device_token)' +
-    ')'
-  );
-
-  await run(
-    'CREATE TABLE IF NOT EXISTS prayer_requests (' +
-      'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
-      'name TEXT,' +
-      'request_text TEXT NOT NULL,' +
-      "visibility TEXT NOT NULL DEFAULT 'private'," +
-      "status TEXT NOT NULL DEFAULT 'pending'," +
-      'created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
-      'updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP' +
-    ')'
-  );
-
-  await run(
-    'CREATE TABLE IF NOT EXISTS prayer_marks (' +
-      'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
-      'prayer_request_id INTEGER NOT NULL,' +
-      'device_token TEXT NOT NULL,' +
-      'created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
-      'FOREIGN KEY(prayer_request_id) REFERENCES prayer_requests(id) ON DELETE CASCADE,' +
-      'UNIQUE(prayer_request_id, device_token)' +
-    ')'
-  );
-
-  await run(
-    'CREATE TABLE IF NOT EXISTS announcements (' +
-      'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
-      'title TEXT NOT NULL,' +
-      'message TEXT NOT NULL,' +
-      "type TEXT NOT NULL DEFAULT 'Normal'," +
-      'start_date TEXT,' +
-      'end_date TEXT,' +
-      'is_active INTEGER NOT NULL DEFAULT 1,' +
-      'created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
-      'updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP' +
-    ')'
+  const status = await migrationStatus();
+  if (status.problems.length) throw new Error('migrations inconsistentes: ' + status.problems.join('; '));
+  if (!status.pending.length) return;
+  if (status.emptyDatabase) {
+    await applyMigrations();
+    return;
+  }
+  throw new Error(
+    'migrations pendentes: ' + status.pending.map((m) => m.name).join(', ') +
+      '. Aplique com "npm run migrate --prefix backend" (deploy: publicar ieclb --migrate).'
   );
 }

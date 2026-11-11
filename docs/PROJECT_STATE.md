@@ -1,3 +1,7 @@
+## Migrations versionadas — 11/11/2026
+
+O schema deixou de ser criado/alterado no start (CREATE IF NOT EXISTS + ALTER com erro ignorado). Agora: backend/migrations/NNNN_*.sql + tabela schema_migrations (sha256), runner backend/src/migrations.js, CLI backend/scripts/migrate.js (status|apply), integrados ao deploy-one (aplicar com --migrate, backup antes). 0001_baseline = schema de 11/11 (produção e DEV idênticos); bancos existentes são adotados após conferência. A API não sobe com migration pendente; banco vazio é criado no start. Removidos os UPDATE de usuários admin/secretaria que rodavam a cada start. Testado com banco vazio, cópia da produção (308 eventos), migration nova, arquivo alterado e migration com erro (rollback).
+
 ## Backup diário dos cinco aplicativos — 14/10/2026 às 17:45 BRT
 
 Pedido autorizado: backup diário de todos os dados/registros/arquivos produção 99→DEVSIGEC 98. Cinco timers 03:00 America/Sao_Paulo enabled/active/Persistent, próximo 15/10 às 03:00 BRT. Ciclos completos coordenados com flock (um por vez), retry on-failure 15 min/limite 3 inícios em 2 h e alertas persistentes/journal locais. Sem canal externo. Retenção 7 diárias/4 semanais/3 mensais + últimas 2 preservada. Backups cifrados e espelhos originais privados; não sobrescrevem DEV ativo nem neutralizam originais.

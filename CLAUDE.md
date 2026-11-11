@@ -24,13 +24,21 @@ npm run frontend       # Vite
 | Banco | SQLite (`DATABASE_FILE`) | `/opt/apps/ieclb/data/database.sqlite` |
 | Atualizar | `publicar ieclb --dev` | `publicar ieclb` |
 
-## Banco — atenção
+## Banco e migrations
 
-- **Não há migrations versionadas.** O schema é criado/alterado no startup por `backend/src/db.js`
-  (`CREATE TABLE IF NOT EXISTS` e `ALTER TABLE` com erro ignorado). Toda mudança de schema precisa ser
-  idempotente e testada contra uma cópia do banco de produção.
+- **Migrations versionadas** (desde 2026-11-11) em `backend/migrations/NNNN_descricao.sql`, registradas na tabela
+  `schema_migrations` (nome + sha256). Runner: `backend/src/migrations.js`; CLI `backend/scripts/migrate.js`.
+- Mudança de schema = **arquivo novo** com o próximo número (ex.: `0002_add_event_color.sql`). Nunca editar nem apagar
+  uma migration já aplicada (o status acusa "arquivo alterado" e o deploy para). Cada arquivo roda numa transação;
+  `PRAGMA foreign_keys` não pode ser trocado dentro dela.
+- Comandos (em `backend/`): `npm run migrate:status` (só lê) e `npm run migrate` (aplica).
+- Deploy: as pendentes aparecem no deploy; aplicar com `publicar ieclb --dev --migrate` / `publicar ieclb --migrate`
+  (backup antes). A API **não sobe** com migration pendente num banco existente; banco vazio é criado no start.
+- `0001_baseline` = schema de 2026-11-11 (igual na produção e no DEV). Bancos antigos são "adotados": o schema é
+  conferido com o baseline e só registrado.
+- O antigo `initDatabase()` com `CREATE TABLE IF NOT EXISTS`/`ALTER TABLE` ignorando erro foi removido; ele também
+  reativava os usuários `admin` e `secretaria` a cada start (não acontece mais).
 - `PRAGMA foreign_keys = ON` desde 2026-11-11 (produção verificada sem violações).
-- O deploy faz backup do SQLite antes de publicar (`/opt/deploy/backups/ieclb/`).
 
 ## Outros
 
